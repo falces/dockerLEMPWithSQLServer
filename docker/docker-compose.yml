@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+    php:
+        build:
+            context: ./config/php-fpm
+        volumes:
+            - ./..:/code
+        container_name: ${APP_NAME:?err}-php
+    nginx:
+        image: nginx:latest
+        ports:
+            - "8080:80"
+            - '4443:443'
+        links:
+            - 'php'
+        volumes:
+            - ./..:/code
+            - ./config/nginx/site.conf:/etc/nginx/conf.d/site.conf
+        links:
+            - php
+        container_name: ${APP_NAME:?err}-nginx
+    mysql_db:
+        image: mysql
+        command: --default-authentication-plugin=mysql_native_password
+        restart: always
+        ports:
+            - '3306:3306'
+        volumes:
+            - ./data/mysql:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+            MYSQL_DATABASE: test
+        container_name: ${APP_NAME:?err}-mysql
+    sqlserver:
+        image: mcr.microsoft.com/mssql/server:2019-CU3-ubuntu-18.04
+        user: '0:0'
+        container_name: ${APP_NAME:?err}-sqlserver2019
+        ports:
+          - 1433:1433
+        environment:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: ${SA_PASSWORD}
+          MSSQL_PID: ${MSSQL_PID}
+        volumes:
+          - ./data/sqlserver:/var/opt/mssql
+    portainer:
+        image: portainer/portainer
+        container_name: ${APP_NAME:?err}-store-portainer
+        ports:
+          - "9010:9000"
+        command: -H unix:///var/run/docker.sock
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+          - ./data/portainer:/data
